@@ -1,7 +1,5 @@
 package top.kkoishi.stg.swing;
 
-import top.kkoishi.stg.Main;
-
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
@@ -68,7 +66,6 @@ public final class TitlePanel extends JPanel implements KeyListener {
             case 0: {
                 removeKeyListener(this);
                 setFocusable(false);
-                Main.main();
                 break;
             }
             default:

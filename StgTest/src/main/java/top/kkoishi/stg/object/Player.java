@@ -1,6 +1,8 @@
 package top.kkoishi.stg.object;
 
+import top.kkoishi.stg.env.GameManager;
 import top.kkoishi.stg.env.GraphicsManager;
+import top.kkoishi.stg.env.RepaintManager;
 import top.kkoishi.stg.env.StageManager;
 
 import java.awt.Graphics;
@@ -21,11 +23,15 @@ import static top.kkoishi.stg.env.KeyControl.up;
 /**
  * @author KKoishi_
  */
-public class Player extends Entire
+public class Player extends Entity
         implements Runnable, KeyListener, Collisionable {
 
     public void setPower (double v) {
         power = v;
+    }
+
+    public int score () {
+        return score;
     }
 
     protected static class PlayerBullet extends Bullet
@@ -41,11 +47,25 @@ public class Player extends Entire
             super(uuid, name, image, pos, r);
         }
 
+        @Override
+        public void setSpeed (int speed) {
+            this.speed = speed;
+        }
+
+        @Override
+        public int speed () {
+            return speed;
+        }
+
+        @Override
+        @Deprecated
+        public boolean deleteTest () {
+            throw new UnsupportedOperationException("This will be auto executed by the game logic.");
+        }
+
+        @Override
         public void move () {
             final Graphics g = GraphicsManager.instance.get().create();
-            final int w = image.getWidth();
-            final int h = image.getHeight();
-            StageManager.cur.partRender(pos.x - w / 2, pos.y - h / 2, w, h);
             pos.y -= speed;
             render0(g);
         }
@@ -83,7 +103,7 @@ public class Player extends Entire
 
     protected int speedHigh = 6;
 
-    protected int speedLow = 3;
+    protected int speedLow = 4;
 
     protected int speed = speedHigh;
 
@@ -99,7 +119,13 @@ public class Player extends Entire
 
     protected BufferedImage mainBltImage;
 
-    protected double bulletR = 4.00;
+    public double bulletR = 4.00;
+
+    protected int life = 2;
+
+    protected int bomb = 3;
+
+    protected int score = 0;
 
     public void setMainBltImage (BufferedImage mainBltImage) {
         this.mainBltImage = mainBltImage;
@@ -131,8 +157,22 @@ public class Player extends Entire
         }
     }
 
+    public void hit () {
+        --life;
+        super.pos = new Point(StageManager.areaWidth / 2, StageManager.areaHeight * 19 / 20);
+        GameManager.playSound("player_hit");
+    }
+
+    public int life () {
+        return life;
+    }
+
+    public int bomb () {
+        return bomb;
+    }
+
     @Override
-    public int renderType () {
+    public final int renderType () {
         return RenderAccess.PLAYER;
     }
 
@@ -144,11 +184,6 @@ public class Player extends Entire
             bulletsRender();
         }
         synchronized (this) {
-            final int w = image.getWidth();
-            final int h = image.getHeight();
-            final int x = pos.x - w / 2;
-            final int y = pos.y - h / 2;
-            StageManager.cur.partRender(x, y, w, h);
             if (left) {
                 if (pos.x - speed > 10) {
                     super.pos.x -= speed;
@@ -169,7 +204,11 @@ public class Player extends Entire
                     super.pos.y += speed;
                 }
             }
-            speed = slow ? speedLow : speedHigh;
+            if (slow) {
+                speed = speedLow;
+            } else {
+                speed = speedHigh;
+            }
             shooting = fire;
             render();
         }
@@ -180,7 +219,17 @@ public class Player extends Entire
         for (final PlayerBullet bullet : BULLETS) {
             if (bullet.pos.y < bullet.speed) {
                 remove.add(bullet);
-                bullet.prepareRepaint();
+                continue;
+            }
+            synchronized (RepaintManager.ENEMIES) {
+                for (Enemy enemy : RepaintManager.ENEMIES) {
+                    if (enemy.pound(bullet)) {
+                        enemy.life -= damage;
+                        enemy.hitAction();
+                        remove.add(bullet);
+                        break;
+                    }
+                }
             }
         }
         while (!remove.isEmpty()) {
@@ -191,6 +240,12 @@ public class Player extends Entire
     public void bulletsRender () {
         synchronized (BULLETS) {
             BULLETS.forEach(PlayerBullet::move);
+        }
+    }
+
+    public void shotAction () {
+        if (shooting) {
+            GameManager.playSound("player_shot");
         }
     }
 
@@ -291,7 +346,6 @@ public class Player extends Entire
             }
         }
     }
-
 
     @Override
     public double radius () {

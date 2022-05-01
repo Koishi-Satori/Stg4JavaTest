@@ -1,11 +1,16 @@
 package top.kkoishi.stg.object;
 
 import top.kkoishi.stg.env.GraphicsManager;
+import top.kkoishi.stg.env.StageManager;
 
-import java.awt.*;
+import java.awt.Graphics;
+import java.awt.Point;
 import java.awt.image.BufferedImage;
 
-public abstract class Bullet implements RenderAccess {
+/**
+ * @author KKoishi_
+ */
+public abstract class Bullet implements RenderAccess, Collisionable {
 
     protected final long uuid;
 
@@ -16,6 +21,22 @@ public abstract class Bullet implements RenderAccess {
     protected Point pos;
 
     protected double r;
+    
+    protected boolean point2player = false;
+
+    /**
+     * Direction degree.
+     */
+    public int direction = 0;
+
+    /**
+     * Rotate degree.
+     */
+    public int degree = 0;
+
+    public void setPoint2player (boolean point2player) {
+        this.point2player = point2player;
+    }
 
     public Bullet (long uuid) {
         this.uuid = uuid;
@@ -39,6 +60,34 @@ public abstract class Bullet implements RenderAccess {
         render();
         return oldVal;
     }
+    
+    protected strictfp final int move2player () {
+        final Point playerPos = StageManager.playerPosGetter.get();
+        System.out.println("Moving to player.From " + pos + " to " + playerPos);
+        final double tgRec = (((float) this.pos.x - playerPos.x) / (this.pos.y - playerPos.y));
+        System.out.println(tgRec);
+        if (Double.isInfinite(StrictMath.abs(tgRec))) {
+            if (this.pos.x < playerPos.x) {
+                return (int) StrictMath.toDegrees(StrictMath.PI / 2);
+            } else {
+                return (int) StrictMath.toDegrees(-StrictMath.PI / 2);
+            }
+        }
+        final double degree = StrictMath.atan(tgRec);
+        System.out.println(degree);
+        if (degree < 0) {
+            if (this.pos.y > playerPos.y) {
+                return (int) StrictMath.toDegrees(degree - StrictMath.PI / 2);
+            }
+        } else {
+            if (this.pos.y > playerPos.y) {
+                return (int) StrictMath.toDegrees(degree + StrictMath.PI / 2);
+            }
+        }
+        return (int) StrictMath.toDegrees(degree);
+    }
+
+    public abstract int speed ();
 
     @Override
     public long uuid () {
@@ -62,10 +111,38 @@ public abstract class Bullet implements RenderAccess {
 
     @Override
     public void prepareRepaint () {
-        repaint0(GraphicsManager.instance.get());
+
     }
 
+    public abstract void move ();
+
+    /**
+     * Test if the bullet will be deleted.
+     *
+     * @return true if it is needed to be deleted.
+     */
+    @Override
+    public abstract boolean deleteTest ();
+
+    /**
+     * The actual render method.
+     *
+     * @see GraphicsManager#get()
+     * @param g inst(GraphicsManager.instance.get())
+     */
     protected abstract void render0 (Graphics g);
 
     protected abstract void repaint0 (Graphics g);
+
+    @Override
+    public double radius () {
+        return r;
+    }
+
+    @Override
+    public Point centre () {
+        return pos;
+    }
+
+    public abstract void setSpeed (int speed);
 }

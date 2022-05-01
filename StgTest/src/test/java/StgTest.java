@@ -8,7 +8,7 @@ import top.kkoishi.proc.property.TokenizeException;
 import top.kkoishi.stg.env.GraphicsManager;
 import top.kkoishi.stg.env.Stage;
 import top.kkoishi.stg.env.StageManager;
-import top.kkoishi.stg.object.Entire;
+import top.kkoishi.stg.object.Entity;
 import top.kkoishi.stg.object.Player;
 
 import javax.imageio.ImageIO;
@@ -124,6 +124,10 @@ public final class StgTest extends JFrame implements Runnable {
         StageManager.areaHeight = buf.getHeight() * 9 / 10;
         StageManager.setStage(0, new Stage(ImageIO.read(new File("./data/stage/st1/background.jpg"))) {
 
+            @Override
+            protected void action () {
+
+            }
         });
     }
 
@@ -142,7 +146,7 @@ public final class StgTest extends JFrame implements Runnable {
             try {
                 f = clz.getDeclaredField(entry.getKey());
             } catch (NoSuchFieldException e) {
-                f = Entire.class.getDeclaredField(entry.getKey());
+                f = Entity.class.getDeclaredField(entry.getKey());
             }
             f.setAccessible(true);
             src = new File(entry.getValue());

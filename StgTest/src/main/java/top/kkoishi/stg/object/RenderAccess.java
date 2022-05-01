@@ -21,4 +21,8 @@ public interface RenderAccess {
     int renderType ();
 
     void prepareRepaint ();
+
+    default boolean deleteTest() {
+        return false;
+    }
 }

@@ -1,6 +1,5 @@
 package top.kkoishi.stg.env;
 
-import top.kkoishi.stg.object.Bullet;
 import top.kkoishi.stg.object.RenderAccess;
 
 import java.awt.Color;
@@ -11,11 +10,26 @@ import java.awt.image.BufferedImage;
 /**
  * @author KKoishi_
  */
-public class Stage implements RenderAccess {
+public abstract class Stage implements RenderAccess,
+        Runnable {
+
+    @Override
+    public void run () {
+        action();
+    }
+
+    /**
+     * The actual implementation of the actions in the stage instance.
+     */
+    protected abstract void action ();
 
     public static final class EmptyStage extends Stage {
 
         final Graphics g = GraphicsManager.instance.get().create();
+
+        @Override
+        protected void action () {
+        }
 
         private EmptyStage (BufferedImage bi) {
             super(bi);
@@ -23,7 +37,7 @@ public class Stage implements RenderAccess {
 
         public EmptyStage () {
             this(null);
-            g.setColor(Color.WHITE);
+            g.setColor(Color.GRAY);
         }
 
         @Override
@@ -59,7 +73,10 @@ public class Stage implements RenderAccess {
 
     @Override
     public void render () {
-        GraphicsManager.instance.get().drawImage(bi, 0, 0, null);
+        GraphicsManager.instance.get().drawImage(bi, 0, 15, StageManager.areaWidth, StageManager.areaHeight, null);
+        if (StageManager.sideBar != null) {
+            GraphicsManager.instance.get().drawImage(StageManager.sideBar, StageManager.areaWidth, 0, null);
+        }
     }
 
     public void draw (Graphics g) {
