@@ -1,5 +1,6 @@
 package top.kkoishi.stg.object;
 
+import top.kkoishi.stg.enhanced.Boss;
 import top.kkoishi.stg.env.GameManager;
 import top.kkoishi.stg.env.GraphicsManager;
 import top.kkoishi.stg.env.RepaintManager;
@@ -233,9 +234,18 @@ public class Player extends Entity
                     if (enemy.pound(bullet)) {
                         enemy.life -= damage;
                         enemy.hitAction();
-                        remove.add(bullet);
+                        remove.offerLast(bullet);
                         break;
                     }
+                }
+            }
+            final Boss boss = RepaintManager.boss();
+            if (boss != null) {
+                if (boss.pound(bullet)) {
+                    boss.hitAction();
+                    boss.life -= damage;
+                    remove.offerLast(bullet);
+                    break;
                 }
             }
         }

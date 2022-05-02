@@ -106,7 +106,7 @@ public final class GameManager {
     }
 
     public static void initialSounds () {
-        PLAYERS.forEach((key, m) -> Arrays.stream(m.players).forEach(ap -> ap.adjustClipSettings(FloatControl.Type.MASTER_GAIN, -10.0f)));
+        PLAYERS.forEach((key, m) -> Arrays.stream(m.players).forEach(ap -> ap.adjustClipSettings(FloatControl.Type.MASTER_GAIN, -5.0f)));
         for (final AudioPlayer ele : PLAYERS.get("stage_1_bg").players) {
             ele.adjustClipSettings(FloatControl.Type.MASTER_GAIN, 6.02060f);
         }

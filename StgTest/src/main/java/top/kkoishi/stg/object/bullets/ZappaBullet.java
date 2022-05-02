@@ -22,6 +22,21 @@ public final class ZappaBullet extends Bullet {
 
     private static final BufferedImage NULL_TEXTURE;
 
+    public static BufferedImage getTexture (int type) {
+        return switch (type) {
+            case RED:
+                yield RED_TEXTURE;
+            case PURPLE:
+                yield PURPLE_TEXTURE;
+            case PINK:
+                yield PINK_TEXTURE;
+            case NULL:
+                yield NULL_TEXTURE;
+            default:
+                throw new IllegalArgumentException("The type " + type + " does not exist.");
+        };
+    }
+
     static {
         try {
             TEXTURE = ImageIO.read(new File("./data/bullets/zappa_bullets.png")).getSubimage(1, 1, 14, 63);

@@ -7,6 +7,7 @@ import top.kkoishi.proc.ini.Section;
 import top.kkoishi.proc.property.BuildFailedException;
 import top.kkoishi.proc.property.LoaderException;
 import top.kkoishi.proc.property.TokenizeException;
+import top.kkoishi.stg.enhanced.Bullets;
 import top.kkoishi.stg.env.GameManager;
 import top.kkoishi.stg.env.GraphicsManager;
 import top.kkoishi.stg.env.RepaintManager;
@@ -198,7 +199,9 @@ public final class StgTest extends JFrame implements Runnable {
         window.setTitle("Sandbox");
         window.setSize(1224, 734);
         window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        window.setUndecorated(true);
         window.setFocusable(true);
+        initialImages();
         StageManager.displayHeight = 720;
         StageManager.displayWidth = 1200;
         StageManager.areaWidth = buf.getWidth() * 3 / 5;
@@ -217,12 +220,31 @@ public final class StgTest extends JFrame implements Runnable {
                 genSimpleEnemy(1, 300, 70);
                 genSimpleEnemy(2, 130, 130);
                 rain();
+                RepaintManager.clearBullets();
+                RepaintManager.clearEnemies();
+                pause(100);
+                final var boss = BehaveManager.firstTestBoss(StageManager.areaWidth / 2, StageManager.areaHeight / 10);
+                RepaintManager.setBoss(boss);
             }
         });
         StageManager.cur = StageManager.getStage(0);
         File sideBar = new File("./data/title/sidebar.png");
         System.out.println("Loading sidebar:" + sideBar.getCanonicalPath());
         StageManager.sideBar = ImageIO.read(sideBar);
+    }
+
+    private static void initialImages () {
+        Bullets.addType(ZappaBullet.getTexture(ZappaBullet.RED));
+        Bullets.addType(ZappaBullet.getTexture(ZappaBullet.PURPLE));
+        //initial boss image.
+        try {
+            BehaveManager.initialize(new File("./data/stage/st1/boss_final_texture.png"),
+                    new File("./data/stage/st1/boss_final_cg.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, e.getMessage());
+            System.exit(114514);
+        }
     }
 
     @SuppressWarnings("all")
@@ -257,7 +279,8 @@ public final class StgTest extends JFrame implements Runnable {
         System.out.println("Loading Logic Thread->Delegated to:" + mainLogic);
         pool.scheduleAtFixedRate(mainLogic, 0, 16, TimeUnit.MILLISECONDS);
         System.out.println("Loading Render Thread->" + ((Runnable) window).toString());
-        pool.scheduleAtFixedRate(window, 2, 16, TimeUnit.MILLISECONDS);
+        pool.scheduleAtFixedRate(window, 8, 16, TimeUnit.MILLISECONDS);
+        System.out.println("Loading player shooting thread...");
         pool.scheduleAtFixedRate(() -> {
             if (select != null) {
                 select.shot();
@@ -268,7 +291,9 @@ public final class StgTest extends JFrame implements Runnable {
                 select.shotAction();
             }
         }, 0, 60, TimeUnit.MILLISECONDS);
+        System.out.println("Loading gc thread...");
         pool.scheduleAtFixedRate(System::gc, 0, 400, TimeUnit.MILLISECONDS);
+        System.out.println("Success to open thread pool:" + pool);
         selectPlayer();
     }
 
@@ -299,7 +324,7 @@ public final class StgTest extends JFrame implements Runnable {
 
     private static void rain () {
         final Random rand = new Random(System.nanoTime());
-        for (int i = 0; i < 514; i++) {
+        for (int i = 0; i < 3; i++) {
             for (int j = 0; j < rand.nextInt(8, 16); j++) {
                 rand.setSeed(System.nanoTime());
                 final int r = rand.nextInt(5, 10);
@@ -357,23 +382,19 @@ public final class StgTest extends JFrame implements Runnable {
     }
 
     private static void createBullet (int x, int type) {
-        final ZappaBullet bullet = ZappaBullet.getInstance(type, x, 20, 3);
-        bullet.setSpeed(2);
+        final Bullet bullet = Bullets.getBullet(type, x, 20, 2, 6, BehaveManager::moveDown);
         RepaintManager.add(bullet);
     }
 
     private static void createBulletWithSound (int x, int type) {
-        final ZappaBullet bullet = ZappaBullet.getInstance(type, x, 20, 3);
-        bullet.setSpeed(2);
+        final Bullet bullet = Bullets.getBullet(type, x, 20, 2, 6, BehaveManager::moveDown);
         RepaintManager.add(bullet);
         GameManager.playSound("stage_1_danmuku_0");
     }
 
     @SuppressWarnings("all")
     private static Bullet createBullet (int x, int y, int type, int speed) {
-        final ZappaBullet bullet = ZappaBullet.getInstance(type, x, y, 3);
-        bullet.setSpeed(speed);
-        return bullet;
+        return Bullets.getBullet(type, x, y, speed, 6, BehaveManager::moveDown);
     }
 
     @SuppressWarnings("all")
@@ -437,9 +458,9 @@ public final class StgTest extends JFrame implements Runnable {
         synchronized (LOCK) {
             StageManager.cur.render();
             if (select != null) {
-                synchronized (RepaintManager.TASKS) {
+                synchronized (RepaintManager.BULLETS) {
                     Bullet b = null;
-                    for (Bullet task : RepaintManager.TASKS) {
+                    for (Bullet task : RepaintManager.BULLETS) {
                         if (task.pound(select)) {
                             System.out.println("Hit");
                             b = task;
@@ -447,7 +468,7 @@ public final class StgTest extends JFrame implements Runnable {
                             break;
                         }
                     }
-                    RepaintManager.TASKS.remove(b);
+                    RepaintManager.BULLETS.remove(b);
                 }
                 if (select.centre().y <= StageManager.areaHeight / 5) {
                     synchronized (RepaintManager.ITEMS) {
@@ -456,6 +477,8 @@ public final class StgTest extends JFrame implements Runnable {
                 }
                 select.run();
             }
+//            FPS_MAKER.makeFps();
+//            System.out.println(FPS_MAKER.getFPS());
             RepaintManager.getRenderThread().run();
             repaint();
         }

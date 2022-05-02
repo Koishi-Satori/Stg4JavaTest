@@ -1,6 +1,5 @@
 package top.kkoishi.stg.enhanced;
 
-import top.kkoishi.game.env.Action;
 import top.kkoishi.stg.env.RepaintManager;
 import top.kkoishi.stg.env.StageManager;
 import top.kkoishi.stg.object.Bullet;
@@ -11,6 +10,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 
 public final class Bullets {
 
@@ -34,6 +34,9 @@ public final class Bullets {
             return speed;
         }
 
+        /**
+         * How to move.
+         */
         @Override
         public abstract void move ();
 
@@ -102,16 +105,16 @@ public final class Bullets {
      * @param moveAction how to move.
      * @return bullet instance.
      */
-    public static Bullet getBullet (int type, int x, int y, int speed, int r, Action moveAction) {
+    public static Bullet getBullet (int type, int x, int y, int speed, int r, Consumer<Bullet> moveAction) {
         return new SimpleBullet(type, new Point(x, y), r, speed) {
             @Override
             public void move () {
-                moveAction.action();
+                moveAction.accept(this);
             }
         };
     }
 
-    public static void pushBuffer (int type, int x, int y, int speed, int r, Action moveAction) {
+    public static void pushBuffer (int type, int x, int y, int speed, int r, Consumer<Bullet> moveAction) {
         synchronized (LOCK) {
             BUFFER.offerLast(getBullet(type, x, y, speed, r, moveAction));
         }

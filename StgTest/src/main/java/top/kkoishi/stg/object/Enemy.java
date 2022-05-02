@@ -39,6 +39,10 @@ public abstract class Enemy extends Entity
      */
     public final ArrayDeque<Bullet> bullets = new ArrayDeque<>(50);
 
+    public void setLife (int life) {
+        this.life = life;
+    }
+
     /**
      * Add a bullet instance to the deque.
      *
@@ -83,8 +87,14 @@ public abstract class Enemy extends Entity
         return this;
     }
 
+    /**
+     * The action after dead.
+     */
     protected abstract void deadAction0 ();
 
+    /**
+     * The action after the enemy become visible.
+     */
     public abstract void action ();
 
     @Override
@@ -116,5 +126,8 @@ public abstract class Enemy extends Entity
         return RenderAccess.BULLET;
     }
 
+    /**
+     * The action after the instance is hit.
+     */
     public abstract void hitAction ();
 }
