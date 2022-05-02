@@ -12,7 +12,13 @@ import top.kkoishi.stg.env.GraphicsManager;
 import top.kkoishi.stg.env.RepaintManager;
 import top.kkoishi.stg.env.Stage;
 import top.kkoishi.stg.env.StageManager;
-import top.kkoishi.stg.object.*;
+import top.kkoishi.stg.object.BaseItem;
+import top.kkoishi.stg.object.Bullet;
+import top.kkoishi.stg.object.Enemy;
+import top.kkoishi.stg.object.Entity;
+import top.kkoishi.stg.object.Item;
+import top.kkoishi.stg.object.Player;
+import top.kkoishi.stg.object.SideBar;
 import top.kkoishi.stg.object.bullets.ZappaBullet;
 import top.kkoishi.stg.object.enemies.SimpleTh06Butterfly;
 
@@ -58,6 +64,10 @@ public final class StgTest extends JFrame implements Runnable {
 
     static BufferedImage[] enemyImages = new BufferedImage[4];
 
+    static BufferedImage powerItemImage;
+
+    static BufferedImage pointItemImage;
+
     /**
      * Use Double Buffering to make sure the fluency of the rendering process.
      */
@@ -84,14 +94,9 @@ public final class StgTest extends JFrame implements Runnable {
     static Player select;
 
     /**
-     * Calculate and render the bullet of selected player.
-     */
-    static Runnable shootTask;
-
-    /**
      * Thread pool.
      */
-    static ScheduledThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(5, new DefaultThreadFactory());
+    static ScheduledThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(6, new DefaultThreadFactory());
 
     private static final File INDEX_SOUNDS = new File("./data/index/sounds.ini");
 
@@ -126,6 +131,15 @@ public final class StgTest extends JFrame implements Runnable {
             enemyImages[2] = total.getSubimage(73, 5, 20, 30);
             enemyImages[3] = total.getSubimage(106, 5, 20, 29);
             System.out.println("Success to load and split the textures:" + Arrays.toString(enemyImages));
+
+            //load item image.
+            System.out.println("Loading item textures...");
+            src = new File("./data/item/th06_power_item.png");
+            System.out.println("Reading texture from:" + src.getCanonicalPath());
+            powerItemImage = ImageIO.read(src);
+            src = new File("./data/item/th06_point_item.png");
+            System.out.println("Reading texture from:" + src.getCanonicalPath());
+            pointItemImage = ImageIO.read(src);
         } catch (IOException | TokenizeException | BuildFailedException | LoaderException |
                 UnsupportedAudioFileException | LineUnavailableException e) {
             e.printStackTrace();
@@ -194,6 +208,11 @@ public final class StgTest extends JFrame implements Runnable {
             @Override
             protected void action () {
                 GameManager.loopSound("stage_1_bg");
+                dropPointItem(100, 100, 100);
+                genSimpleEnemy(2, 30, 50);
+                genSimpleEnemy(1, 300, 70);
+                genSimpleEnemy(2, 130, 130);
+                pause(1500);
                 genSimpleEnemy(2, 30, 50);
                 genSimpleEnemy(1, 300, 70);
                 genSimpleEnemy(2, 130, 130);
@@ -231,15 +250,12 @@ public final class StgTest extends JFrame implements Runnable {
         }
     }
 
-    private static void sidebarInitial () {
-
-    }
-
     public static void main (String[] args) {
         window.setVisible(true);
         System.out.println("Initialing treads.");
-        System.out.println("Loading Logic Thread->Delegated to:" + RepaintManager.class);
-        pool.scheduleAtFixedRate(RepaintManager.getLogicThread(), 0, 16, TimeUnit.MILLISECONDS);
+        final Runnable mainLogic = RepaintManager.getLogicThread();
+        System.out.println("Loading Logic Thread->Delegated to:" + mainLogic);
+        pool.scheduleAtFixedRate(mainLogic, 0, 16, TimeUnit.MILLISECONDS);
         System.out.println("Loading Render Thread->" + ((Runnable) window).toString());
         pool.scheduleAtFixedRate(window, 2, 16, TimeUnit.MILLISECONDS);
         pool.scheduleAtFixedRate(() -> {
@@ -252,6 +268,7 @@ public final class StgTest extends JFrame implements Runnable {
                 select.shotAction();
             }
         }, 0, 60, TimeUnit.MILLISECONDS);
+        pool.scheduleAtFixedRate(System::gc, 0, 400, TimeUnit.MILLISECONDS);
         selectPlayer();
     }
 
@@ -293,6 +310,50 @@ public final class StgTest extends JFrame implements Runnable {
                 }
             }
         }
+    }
+
+    private static BaseItem dropPointItem (int x, int y, int point) {
+        final BaseItem baseItem = new BaseItem(114514L, "Point", pointItemImage) {
+            @Override
+            public void collect () {
+                GameManager.setMaxPoint(GameManager.maxPoint() + point);
+            }
+
+            @Override
+            public boolean collectTest () {
+                return this.pound(select);
+            }
+
+            @Override
+            public void transport2player () {
+                super.pos = new Point(select.centre());
+            }
+        };
+        baseItem.setPos(x, y);
+        RepaintManager.add(baseItem);
+        return baseItem;
+    }
+
+    private static BaseItem dropPowerItem (int x, int y, double increment) {
+        final BaseItem baseItem = new BaseItem(1919810L, "Power", powerItemImage) {
+            @Override
+            public void collect () {
+                select.setPower(select.power() + increment);
+            }
+
+            @Override
+            public boolean collectTest () {
+                return this.pound(select);
+            }
+
+            @Override
+            public void transport2player () {
+                super.pos = new Point(select.centre());
+            }
+        };
+        baseItem.setPos(x, y);
+        RepaintManager.add(baseItem);
+        return baseItem;
     }
 
     private static void createBullet (int x, int type) {
@@ -344,6 +405,16 @@ public final class StgTest extends JFrame implements Runnable {
                     pause(500);
                 }
             }
+
+            @Override
+            public void deadAction0 () {
+                super.deadAction0();
+                dropPowerItem(super.pos.x, super.pos.y, 0.50).setSpeed(4);
+                final Random random = new Random();
+                dropPowerItem(super.pos.x - random.nextInt(20), super.pos.y + 10, 1.00).setSpeed(4);
+                dropPointItem(super.pos.x + random.nextInt(-20, 20), super.pos.y + random.nextInt(-20, 20), 10);
+                dropPointItem(super.pos.x + random.nextInt(-20, 20), super.pos.y + random.nextInt(-20, 20), 100).setSpeed(8);
+            }
         };
         RepaintManager.ENEMIES.add(e);
         new Thread(e::action).start();
@@ -352,6 +423,8 @@ public final class StgTest extends JFrame implements Runnable {
     private static void start () {
         StageManager.stageLogicStart();
         select.render();
+        System.gc();
+        System.runFinalization();
     }
 
     @Override
@@ -362,28 +435,29 @@ public final class StgTest extends JFrame implements Runnable {
     @Override
     public void run () {
         synchronized (LOCK) {
-            logic();
-            repaint();
-        }
-    }
-
-    private void logic () {
-        StageManager.cur.render();
-        if (select != null) {
-            synchronized (RepaintManager.TASKS) {
-                Bullet b = null;
-                for (Bullet task : RepaintManager.TASKS) {
-                    if (task.pound(select)) {
-                        System.out.println("Hit");
-                        b = task;
-                        select.hit();
-                        break;
+            StageManager.cur.render();
+            if (select != null) {
+                synchronized (RepaintManager.TASKS) {
+                    Bullet b = null;
+                    for (Bullet task : RepaintManager.TASKS) {
+                        if (task.pound(select)) {
+                            System.out.println("Hit");
+                            b = task;
+                            select.hit();
+                            break;
+                        }
+                    }
+                    RepaintManager.TASKS.remove(b);
+                }
+                if (select.centre().y <= StageManager.areaHeight / 5) {
+                    synchronized (RepaintManager.ITEMS) {
+                        RepaintManager.ITEMS.forEach(Item::transport2player);
                     }
                 }
-                RepaintManager.TASKS.remove(b);
+                select.run();
             }
-            select.run();
+            RepaintManager.getRenderThread().run();
+            repaint();
         }
-        RepaintManager.getRenderThread().run();
     }
 }

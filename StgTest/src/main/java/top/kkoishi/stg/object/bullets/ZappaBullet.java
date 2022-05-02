@@ -1,7 +1,6 @@
 package top.kkoishi.stg.object.bullets;
 
 import top.kkoishi.stg.env.GraphicsManager;
-import top.kkoishi.stg.env.RepaintManager;
 import top.kkoishi.stg.env.StageManager;
 import top.kkoishi.stg.object.Bullet;
 

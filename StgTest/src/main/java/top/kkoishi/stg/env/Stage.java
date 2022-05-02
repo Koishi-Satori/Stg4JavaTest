@@ -10,8 +10,8 @@ import java.awt.image.BufferedImage;
 /**
  * @author KKoishi_
  */
-public abstract class Stage implements RenderAccess,
-        Runnable {
+public abstract class Stage
+        implements RenderAccess, Runnable {
 
     @Override
     public void run () {
@@ -73,7 +73,7 @@ public abstract class Stage implements RenderAccess,
 
     @Override
     public void render () {
-        GraphicsManager.instance.get().drawImage(bi, 0, 15, StageManager.areaWidth, StageManager.areaHeight, null);
+        GraphicsManager.instance.get().drawImage(bi, 0, 20, StageManager.areaWidth, StageManager.areaHeight, null);
         if (StageManager.sideBar != null) {
             GraphicsManager.instance.get().drawImage(StageManager.sideBar, StageManager.areaWidth, 0, null);
         }

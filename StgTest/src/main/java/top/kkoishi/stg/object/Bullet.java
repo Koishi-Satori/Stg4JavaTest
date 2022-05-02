@@ -145,4 +145,9 @@ public abstract class Bullet implements RenderAccess, Collisionable {
     }
 
     public abstract void setSpeed (int speed);
+
+    @Override
+    public void clear () {
+        image = null;
+    }
 }

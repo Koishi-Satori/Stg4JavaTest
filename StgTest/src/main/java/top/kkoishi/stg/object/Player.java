@@ -26,14 +26,6 @@ import static top.kkoishi.stg.env.KeyControl.up;
 public class Player extends Entity
         implements Runnable, KeyListener, Collisionable {
 
-    public void setPower (double v) {
-        power = v;
-    }
-
-    public int score () {
-        return score;
-    }
-
     protected static class PlayerBullet extends Bullet
             implements Collisionable {
 
@@ -119,13 +111,28 @@ public class Player extends Entity
 
     protected BufferedImage mainBltImage;
 
-    public double bulletR = 4.00;
+    public double bulletR = 8.00;
 
     protected int life = 2;
 
     protected int bomb = 3;
 
     protected int score = 0;
+
+    public void setPower (double v) {
+        if (v > 4.00) {
+            return;
+        }
+        power = v;
+    }
+
+    public int score () {
+        return score;
+    }
+
+    public double power () {
+        return power;
+    }
 
     public void setMainBltImage (BufferedImage mainBltImage) {
         this.mainBltImage = mainBltImage;
@@ -257,9 +264,9 @@ public class Player extends Entity
                 BULLETS.offerLast(PlayerBullet.create(uuid, mainBltImage, pos.x - bltWidth, pos.y - bltHeight, bulletR));
                 BULLETS.offerLast(PlayerBullet.create(uuid, mainBltImage, pos.x + bltWidth, pos.y - bltHeight, bulletR));
                 if (power >= 1.00) {
-                    damage = 3.50;
+                    damage = 10.00;
                 } else {
-                    damage = 2.50;
+                    damage = 6.50;
                 }
                 bltWidth = bulletImage.getWidth();
                 bltHeight = bulletImage.getHeight();

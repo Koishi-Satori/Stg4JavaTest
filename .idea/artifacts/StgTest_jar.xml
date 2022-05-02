@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="StgTest:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/StgTest_jar</output-path>
+    <root id="archive" name="StgTest.jar">
+      <element id="module-output" name="StgTest" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../ScreenShot/lib/SimpleApi.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../ScreenShot/lib/Properties.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
