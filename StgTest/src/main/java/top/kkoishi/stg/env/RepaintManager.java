@@ -33,11 +33,15 @@ public final class RepaintManager {
     public static SideBar sideBar;
 
     public static void add (Bullet bullet) {
-        BULLETS.add(bullet);
+        synchronized (RepaintManager.class) {
+            BULLETS.add(bullet);
+        }
     }
 
     public static void add (Item item) {
-        ITEMS.add(item);
+        synchronized (RepaintManager.class) {
+            ITEMS.add(item);
+        }
     }
 
     public static Boss boss () {

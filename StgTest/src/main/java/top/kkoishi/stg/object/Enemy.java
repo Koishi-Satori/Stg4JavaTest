@@ -123,7 +123,14 @@ public abstract class Enemy extends Entity
 
     @Override
     public final int renderType () {
-        return RenderAccess.BULLET;
+        return RenderAccess.ENEMY;
+    }
+
+    @Override
+    public void clear () {
+        super.clear();
+        this.bullets.clear();
+        this.life = 0;
     }
 
     /**

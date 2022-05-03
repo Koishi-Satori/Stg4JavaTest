@@ -6,6 +6,11 @@ import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 
+/**
+ * The class used to manage the stages.
+ *
+ * @author KKoishi_
+ */
 public final class StageManager {
 
     public static String[] difficulties = {"Easy", "Normal", "Hard", "Lunatic"};

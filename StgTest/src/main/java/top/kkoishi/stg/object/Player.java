@@ -37,6 +37,12 @@ public class Player extends Entity
                 protected void render0 (Graphics g) {
                     g.drawImage(bulletImage, super.pos.x - bulletImage.getWidth() / 2, super.pos.y - bulletImage.getHeight() / 2, null);
                 }
+
+                @Override
+                public void clear () {
+                    super.clear();
+                    this.speed = 0;
+                }
             };
         }
 
@@ -267,7 +273,9 @@ public class Player extends Entity
             }
         }
         while (!remove.isEmpty()) {
-            BULLETS.remove(remove.removeFirst());
+            var ref = remove.removeFirst();
+            BULLETS.remove(ref);
+            ref.clear();
         }
     }
 
