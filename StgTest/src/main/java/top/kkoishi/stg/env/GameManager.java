@@ -38,7 +38,7 @@ public final class GameManager {
 
     public static int audioChannelAmount = 10;
 
-    private static int process = GAME;
+    private static int process = TITLE;
 
     public static MethodRef<Integer> life;
 
@@ -129,6 +129,16 @@ public final class GameManager {
 
     public static void loopSound (String key) {
         PLAYERS.get(key).play();
+    }
+
+    public static void stopAllSound (String key) {
+        Arrays.stream(PLAYERS.get(key).players).forEach(AudioPlayer::stop);
+    }
+
+    public static void stopAllSound () {
+        for (final AudioManager am : PLAYERS.values()) {
+            Arrays.stream(am.players).forEach(AudioPlayer::stop);
+        }
     }
 
     static final class AudioManager {

@@ -42,7 +42,7 @@ public final class Bullets {
 
         @Override
         public boolean deleteTest () {
-            return super.pos.x < 10 || super.pos.x > StageManager.areaWidth || super.pos.y < 10 || super.pos.y > StageManager.areaHeight;
+            return super.pos.x < 10 || super.pos.x > StageManager.areaWidth || super.pos.y < 30 || super.pos.y > StageManager.areaHeight;
         }
 
         @Override

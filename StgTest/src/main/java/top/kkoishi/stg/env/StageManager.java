@@ -45,6 +45,13 @@ public final class StageManager {
         }
     }
 
+    public static boolean hasNextStage () {
+        if (stage >= stages.length) {
+            return false;
+        }
+        return stages[stage + 1] != null;
+    }
+
     public static Stage getStage (int index) {
         final Stage stage = stages[index];
         return stage != null ? stage : EMPTY_STAGE;
@@ -57,6 +64,6 @@ public final class StageManager {
 
     @SuppressWarnings("all")
     public static void stageLogicStart () {
-        new Thread(cur).start();;
+        new Thread(cur).start();
     }
 }

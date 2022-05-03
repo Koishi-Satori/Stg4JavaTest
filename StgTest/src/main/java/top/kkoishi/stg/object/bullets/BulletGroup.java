@@ -52,7 +52,7 @@ public abstract class BulletGroup extends Bullet {
         synchronized (this) {
             final int x = super.pos.x;
             final int y = super.pos.y;
-            return x > StageManager.areaWidth || x < 10 || y > StageManager.areaHeight || y < 10;
+            return x > StageManager.areaWidth || x < 10 || y > StageManager.areaHeight || y < 36;
         }
     }
 

@@ -2,6 +2,7 @@ package top.kkoishi.stg;
 
 import top.kkoishi.concurrent.DefaultThreadFactory;
 import top.kkoishi.game.env.CFPSMaker;
+import top.kkoishi.io.ZipFiles;
 import top.kkoishi.proc.ini.INIPropertiesLoader;
 import top.kkoishi.proc.ini.Section;
 import top.kkoishi.proc.property.BuildFailedException;
@@ -22,6 +23,7 @@ import top.kkoishi.stg.object.Player;
 import top.kkoishi.stg.object.SideBar;
 import top.kkoishi.stg.object.bullets.ZappaBullet;
 import top.kkoishi.stg.object.enemies.SimpleTh06Butterfly;
+import top.kkoishi.stg.swing.LoadProcessor;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
@@ -36,7 +38,10 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -49,30 +54,54 @@ import java.util.concurrent.TimeUnit;
 public final class StgTest extends JFrame implements Runnable {
 
     /**
-     * Players' properties.
+     * Index file of players.
      */
     private static final File INDEX_PLAYERS = new File("./data/index/players.ini");
 
+    /**
+     * Index file of sidebar.
+     */
     private static final File INDEX_SIDEBAR = new File("./data/index/sidebar.ini");
 
+    /**
+     * The players ini properties loader.
+     */
     private static final INIPropertiesLoader INI_PLAYERS = new INIPropertiesLoader();
 
+    /**
+     * The sounds ini properties loader.
+     */
     private static final INIPropertiesLoader INI_SOUNDS = new INIPropertiesLoader();
 
+    /**
+     * The sidebar ini properties loader.
+     */
     private static final INIPropertiesLoader INI_SIDEBAR = new INIPropertiesLoader();
 
+    /**
+     * Fps maker.
+     */
     private static final CFPSMaker FPS_MAKER = new CFPSMaker();
 
+    /**
+     * The textures of butterfly enemies.
+     */
     static BufferedImage[] enemyImages = new BufferedImage[4];
 
+    /**
+     * The texture of power item.
+     */
     static BufferedImage powerItemImage;
 
+    /**
+     * The texture of point item.
+     */
     static BufferedImage pointItemImage;
 
     /**
      * Use Double Buffering to make sure the fluency of the rendering process.
      */
-    public static BufferedImage buf = new BufferedImage(1200, 720, BufferedImage.TYPE_INT_ARGB_PRE);
+    public static BufferedImage buf = new BufferedImage(1200, 760, BufferedImage.TYPE_INT_ARGB_PRE);
 
     /**
      * The lock object.
@@ -99,12 +128,51 @@ public final class StgTest extends JFrame implements Runnable {
      */
     static ScheduledThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(6, new DefaultThreadFactory());
 
+    /**
+     * The loading processor.
+     */
+    static LoadProcessor loadProcessor;
+
+    /**
+     * Index file of sounds.
+     */
     private static final File INDEX_SOUNDS = new File("./data/index/sounds.ini");
 
+    /**
+     * Index file of enemies.
+     */
     private static final String ENEMY_TEXTURE_PATH = "./data/enemy/stg1enm_butterfly.png";
 
     static {
+        //must initial
+        GameManager.setProcess(GameManager.GAME);
+        System.out.println("Start game process...");
+        GraphicsManager.initialInstance(buf.createGraphics());
+        loadProcessor = LoadProcessor.getInstance(GraphicsManager.instance.get());
+        System.out.println("Finish setting Graphics instance.");
         FPS_MAKER.setNowFPS(System.nanoTime());
+        windowInitial();
+        System.out.println("Finish initial window.");
+        initialThreads();
+        //set load processor images.
+        try {
+            File bgSrc = new File("./data/background_loading_game.png");
+            System.out.println("Loading load texture:" + bgSrc.getCanonicalPath());
+            loadProcessor.addBackground(ImageIO.read(bgSrc));
+            loadProcessor.setLastFrames(60);
+//            new Thread(() -> {
+//                while (loadProcessor.available()) {
+//                    loadProcessor.render();
+//                }
+//            }).start();
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, e.getMessage());
+            System.exit(114514);
+        }
+        window.setVisible(true);
+        System.out.println("Success to open the window.");
+
         try {
             //load players.
             loadPlayers();
@@ -147,7 +215,6 @@ public final class StgTest extends JFrame implements Runnable {
             JOptionPane.showMessageDialog(null, e.getMessage(), e.getClass().getName(), JOptionPane.ERROR_MESSAGE);
             System.exit(1919810);
         }
-        GraphicsManager.initialInstance(buf.createGraphics());
         GameManager.initialSounds();
         try {
             areaInitial();
@@ -196,17 +263,17 @@ public final class StgTest extends JFrame implements Runnable {
     }
 
     private static void areaInitial () throws IOException {
-        window.setTitle("Sandbox");
-        window.setSize(1224, 734);
-        window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        window.setUndecorated(true);
-        window.setFocusable(true);
         initialImages();
-        StageManager.displayHeight = 720;
-        StageManager.displayWidth = 1200;
         StageManager.areaWidth = buf.getWidth() * 3 / 5;
         StageManager.areaHeight = buf.getHeight() * 9 / 10;
         StageManager.initPos = new Point(StageManager.areaWidth / 2, StageManager.areaHeight * 17 / 20);
+        stageInitial();
+        File sideBar = new File("./data/title/sidebar.png");
+        System.out.println("Loading sidebar:" + sideBar.getCanonicalPath());
+        StageManager.sideBar = ImageIO.read(sideBar);
+    }
+
+    private static void stageInitial () throws IOException {
         StageManager.setStage(0, new Stage(ImageIO.read(new File("./data/stage/st1/background.png"))) {
             @Override
             protected void action () {
@@ -227,10 +294,35 @@ public final class StgTest extends JFrame implements Runnable {
                 RepaintManager.setBoss(boss);
             }
         });
+        System.out.println("Initial first stage:" + StageManager.getStage(0));
         StageManager.cur = StageManager.getStage(0);
-        File sideBar = new File("./data/title/sidebar.png");
-        System.out.println("Loading sidebar:" + sideBar.getCanonicalPath());
-        StageManager.sideBar = ImageIO.read(sideBar);
+        System.out.println("Setting current stage to the " + StageManager.stage + " one.");
+    }
+
+    private static void windowInitial () {
+        try {
+            File src = new File("./data/icons.dat");
+            System.out.println("Decompress icons:" + src.getCanonicalPath());
+            ZipFiles.decompress(src, "./data/temp");
+            final List<BufferedImage> icons = new ArrayList<>(2);
+            src = new File("./data/temp");
+            System.out.println("Getting into the icon temp directory:" + src.getCanonicalPath());
+            for (final File file : Objects.requireNonNull(src.listFiles())) {
+                System.out.println("Decoding icon file:" + file);
+                icons.add(ImageIO.read(file));
+            }
+            window.setIconImages(icons);
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, e.getMessage());
+            System.exit(1919810);
+        }
+        StageManager.displayWidth = 1207;
+        StageManager.displayHeight = 753;
+        window.setTitle("Sandbox");
+        window.setSize(1214, 760);
+        window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        window.setFocusable(true);
     }
 
     private static void initialImages () {
@@ -273,7 +365,10 @@ public final class StgTest extends JFrame implements Runnable {
     }
 
     public static void main (String[] args) {
-        window.setVisible(true);
+        selectPlayer();
+    }
+
+    private static void initialThreads () {
         System.out.println("Initialing treads.");
         final Runnable mainLogic = RepaintManager.getLogicThread();
         System.out.println("Loading Logic Thread->Delegated to:" + mainLogic);
@@ -294,7 +389,6 @@ public final class StgTest extends JFrame implements Runnable {
         System.out.println("Loading gc thread...");
         pool.scheduleAtFixedRate(System::gc, 0, 400, TimeUnit.MILLISECONDS);
         System.out.println("Success to open thread pool:" + pool);
-        selectPlayer();
     }
 
     @SuppressWarnings("all")
@@ -442,6 +536,7 @@ public final class StgTest extends JFrame implements Runnable {
     }
 
     private static void start () {
+        loadProcessor.dispose();
         StageManager.stageLogicStart();
         select.render();
         System.gc();
@@ -454,33 +549,41 @@ public final class StgTest extends JFrame implements Runnable {
     }
 
     @Override
+    @SuppressWarnings("all")
     public void run () {
         synchronized (LOCK) {
             StageManager.cur.render();
             if (select != null) {
-                synchronized (RepaintManager.BULLETS) {
-                    Bullet b = null;
-                    for (Bullet task : RepaintManager.BULLETS) {
-                        if (task.pound(select)) {
-                            System.out.println("Hit");
-                            b = task;
-                            select.hit();
-                            break;
-                        }
-                    }
-                    RepaintManager.BULLETS.remove(b);
-                }
-                if (select.centre().y <= StageManager.areaHeight / 5) {
-                    synchronized (RepaintManager.ITEMS) {
-                        RepaintManager.ITEMS.forEach(Item::transport2player);
-                    }
-                }
-                select.run();
+                select.render();
             }
+//            make fps:
 //            FPS_MAKER.makeFps();
 //            System.out.println(FPS_MAKER.getFPS());
             RepaintManager.getRenderThread().run();
             repaint();
+        }
+    }
+
+    public static void playerLogic () {
+        if (select != null) {
+            select.run();
+            synchronized (RepaintManager.class) {
+                Bullet b = null;
+                for (Bullet task : RepaintManager.BULLETS) {
+                    if (task.pound(select)) {
+                        System.out.println("Hit");
+                        b = task;
+                        select.hit();
+                        break;
+                    }
+                }
+                RepaintManager.BULLETS.remove(b);
+            }
+            if (select.centre().y <= StageManager.areaHeight / 5) {
+                synchronized (RepaintManager.ITEMS) {
+                    RepaintManager.ITEMS.forEach(Item::transport2player);
+                }
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package top.kkoishi.stg.env;
 
+import top.kkoishi.stg.StgTest;
 import top.kkoishi.stg.enhanced.Boss;
 import top.kkoishi.stg.enhanced.Dialog;
 import top.kkoishi.stg.enhanced.SpellCard;
@@ -107,7 +108,6 @@ public final class RepaintManager {
                 while (!removeItem.isEmpty()) {
                     ITEMS.remove(removeItem.removeFirst());
                 }
-
                 BossLogic:
                 if (boss != null) {
                     if (boss.hasMoreAction() || action != null) {
@@ -130,6 +130,8 @@ public final class RepaintManager {
                         action.logic();
                     }
                 }
+                //run the player logic.
+                StgTest.playerLogic();
             }
         };
     }

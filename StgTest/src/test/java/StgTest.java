@@ -122,7 +122,7 @@ public final class StgTest extends JFrame implements Runnable {
         window.setFocusable(true);
         StageManager.areaWidth = buf.getWidth() * 3 / 5;
         StageManager.areaHeight = buf.getHeight() * 9 / 10;
-        StageManager.setStage(0, new Stage(ImageIO.read(new File("./data/stage/st1/background.jpg"))) {
+        StageManager.setStage(0, new Stage(ImageIO.read(new File("./data/stage/st1/load_before_game.jpg"))) {
 
             @Override
             protected void action () {

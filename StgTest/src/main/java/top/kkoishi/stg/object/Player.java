@@ -2,7 +2,6 @@ package top.kkoishi.stg.object;
 
 import top.kkoishi.stg.enhanced.Boss;
 import top.kkoishi.stg.env.GameManager;
-import top.kkoishi.stg.env.GraphicsManager;
 import top.kkoishi.stg.env.RepaintManager;
 import top.kkoishi.stg.env.StageManager;
 
@@ -32,8 +31,13 @@ public class Player extends Entity
 
         protected int speed = 8;
 
-        public static PlayerBullet create (long uuid, BufferedImage bi, int x, int y, double r) {
-            return new PlayerBullet(uuid, "PlayerBullet", bi, new Point(x, y), r);
+        public static PlayerBullet create (long uuid, BufferedImage bulletImage, int x, int y, double r) {
+            return new PlayerBullet(uuid, "PlayerBullet", null, new Point(x, y), r) {
+                @Override
+                protected void render0 (Graphics g) {
+                    g.drawImage(bulletImage, super.pos.x - bulletImage.getWidth() / 2, super.pos.y - bulletImage.getHeight() / 2, null);
+                }
+            };
         }
 
         protected PlayerBullet (long uuid, String name, BufferedImage image, Point pos, double r) {
@@ -58,14 +62,12 @@ public class Player extends Entity
 
         @Override
         public void move () {
-            final Graphics g = GraphicsManager.instance.get().create();
             pos.y -= speed;
-            render0(g);
         }
 
         @Override
         protected void render0 (Graphics g) {
-            g.drawImage(super.image, pos.x - image.getWidth() / 2, pos.y - image.getHeight() / 2, null);
+            //pass
         }
 
         @Override
@@ -187,11 +189,8 @@ public class Player extends Entity
     @Override
     public void run () {
         //render player bullets.
-        synchronized (BULLETS) {
-            remove();
-            bulletsRender();
-        }
         synchronized (this) {
+            bulletLogic();
             if (left) {
                 if (pos.x - speed > 10) {
                     super.pos.x -= speed;
@@ -218,45 +217,57 @@ public class Player extends Entity
                 speed = speedHigh;
             }
             shooting = fire;
-            render();
         }
     }
 
-    private void remove () {
+    private void bulletLogic () {
+        final Boss boss = RepaintManager.boss();
         final ArrayDeque<PlayerBullet> remove = new ArrayDeque<>(8);
-        for (final PlayerBullet bullet : BULLETS) {
-            if (bullet.pos.y < bullet.speed) {
-                remove.add(bullet);
-                continue;
-            }
-            synchronized (RepaintManager.ENEMIES) {
-                for (Enemy enemy : RepaintManager.ENEMIES) {
-                    if (enemy.pound(bullet)) {
-                        enemy.life -= damage;
-                        enemy.hitAction();
-                        remove.offerLast(bullet);
-                        break;
+        if (boss == null) {
+            for (final PlayerBullet bullet : BULLETS) {
+                if (bullet.pos.y - bullet.speed < 30) {
+                    remove.add(bullet);
+                    continue;
+                }
+                synchronized (RepaintManager.class) {
+                    for (Enemy enemy : RepaintManager.ENEMIES) {
+                        if (enemy.pound(bullet)) {
+                            enemy.life -= damage;
+                            enemy.hitAction();
+                            remove.offerLast(bullet);
+                            break;
+                        }
                     }
                 }
+                bullet.move();
             }
-            final Boss boss = RepaintManager.boss();
-            if (boss != null) {
+        } else {
+            for (final PlayerBullet bullet : BULLETS) {
+                if (bullet.pos.y - bullet.speed < 30) {
+                    remove.add(bullet);
+                    continue;
+                }
+                synchronized (RepaintManager.class) {
+                    for (Enemy enemy : RepaintManager.ENEMIES) {
+                        if (enemy.pound(bullet)) {
+                            enemy.life -= damage;
+                            enemy.hitAction();
+                            remove.offerLast(bullet);
+                            break;
+                        }
+                    }
+                }
                 if (boss.pound(bullet)) {
-                    boss.hitAction();
                     boss.life -= damage;
+                    boss.hitAction();
                     remove.offerLast(bullet);
                     break;
                 }
+                bullet.move();
             }
         }
         while (!remove.isEmpty()) {
             BULLETS.remove(remove.removeFirst());
-        }
-    }
-
-    public void bulletsRender () {
-        synchronized (BULLETS) {
-            BULLETS.forEach(PlayerBullet::move);
         }
     }
 
@@ -298,7 +309,10 @@ public class Player extends Entity
 
     @Override
     public void render () {
-        super.render();
+        synchronized (this) {
+            super.render();
+            BULLETS.forEach(PlayerBullet::render);
+        }
     }
 
     @Override
@@ -362,6 +376,10 @@ public class Player extends Entity
                     break;
             }
         }
+    }
+
+    public void renderBullets () {
+
     }
 
     @Override

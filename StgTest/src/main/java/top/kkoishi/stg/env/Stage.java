@@ -1,5 +1,6 @@
 package top.kkoishi.stg.env;
 
+import top.kkoishi.game.env.Action;
 import top.kkoishi.stg.object.RenderAccess;
 
 import java.awt.Color;
@@ -16,6 +17,9 @@ public abstract class Stage
     @Override
     public void run () {
         action();
+        if (StageManager.hasNextStage()) {
+            (StageManager.cur = StageManager.getStage(++StageManager.stage)).run();
+        }
     }
 
     /**
@@ -42,7 +46,7 @@ public abstract class Stage
 
         @Override
         public void render () {
-            g.fillRect(0, 0, StageManager.displayWidth, StageManager.displayHeight);
+            g.fillRect(0, 0, StageManager.areaWidth, StageManager.areaHeight);
         }
 
         @Override
@@ -73,14 +77,14 @@ public abstract class Stage
 
     @Override
     public void render () {
-        GraphicsManager.instance.get().drawImage(bi, 0, 20, StageManager.areaWidth, StageManager.areaHeight, null);
+        GraphicsManager.instance.get().drawImage(bi, 7, 30, StageManager.displayWidth, StageManager.displayHeight, null);
         if (StageManager.sideBar != null) {
-            GraphicsManager.instance.get().drawImage(StageManager.sideBar, StageManager.areaWidth, 0, null);
+            GraphicsManager.instance.get().drawImage(StageManager.sideBar, StageManager.areaWidth + 7, 30, null);
         }
     }
 
     public void draw (Graphics g) {
-        g.drawImage(bi, 0, 0, null);
+        g.drawImage(bi, 7, 30, null);
     }
 
     @Override
@@ -101,8 +105,9 @@ public abstract class Stage
 
     @Override
     public String toString () {
-        return "Stage[@" + super.hashCode() + "]{" +
+        return "Stage{" +
                 "background=" + bi +
+                ", action=" + (Action) (this::action) +
                 '}';
     }
 }
